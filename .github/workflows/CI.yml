@@ -33,7 +33,9 @@ jobs:
         cmake -S ${{ github.workspace }} -B ${{ github.workspace }}/build -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
     - name: Build
-      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+      run: |
+        build/activate.ps1
+        cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
     
     - name: Install
       run: cmake --install ${{ github.workspace }}/build --config ${{ matrix.build_type }}
@@ -73,11 +75,13 @@ jobs:
     
     - name: Configure
       run: |
-        build/activate.ps1
+        source build/activate.sh
         cmake -S ${{ github.workspace }} -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
     - name: Build
-      run: cmake --build ${{ github.workspace }}/build
+      run: |
+        source build/activate.sh
+        cmake --build ${{ github.workspace }}/build
     
     - name: Install
       run: cmake --install ${{ github.workspace }}/build
