@@ -1,0 +1,89 @@
+
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+
+jobs:
+  win32:
+    name: win32 ${{ matrix.build_type }}
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build requirements
+      run: |
+        python -m pip install conan
+        mkdir build
+        cd build
+        conan install .. --build=missing
+    
+    - name: Configure
+      run: |
+        build/activate.ps1
+        cmake -S ${{ github.workspace }} -B ${{ github.workspace }}/build -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+    
+    - name: Install
+      run: cmake --install ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: win32 ${{ matrix.build_type }}
+        path: ${{ github.workspace }}/install
+
+  linux:
+    name: linux ${{ matrix.compiler.cc }} ${{ matrix.build_type }} 
+    runs-on: ubuntu-20.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release, Debug]
+        compiler:
+          - cc: gcc-10
+            cxx: g++-10
+          - cc: clang-11
+            cxx: clang++-11
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build requirements
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+      run: |
+        python -m pip install conan
+        mkdir build
+        cd build
+        conan install .. --build=missing
+    
+    - name: Configure
+      run: |
+        build/activate.ps1
+        cmake -S ${{ github.workspace }} -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build
+    
+    - name: Install
+      run: cmake --install ${{ github.workspace }}/build
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: linux ${{ matrix.compiler.cc }} ${{ matrix.build_type }} 
+        path: ${{ github.workspace }}/install
