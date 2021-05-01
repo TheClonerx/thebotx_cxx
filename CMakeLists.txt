@@ -42,7 +42,6 @@ find_package(spdlog REQUIRED)
 
 add_executable(thebotx_cxx src/main.cpp)
 target_link_libraries(thebotx_cxx PRIVATE ch Boost::Boost fmt::fmt spdlog::spdlog)
-target_compile_options(thebotx_cxx PRIVATE -fcoroutines)
 target_include_directories(thebotx_cxx PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 
 
