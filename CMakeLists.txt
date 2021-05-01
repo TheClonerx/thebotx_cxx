@@ -15,6 +15,10 @@ find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(fmt REQUIRED)
 
+if (MSVC)
+    add_compile_options(/bigobj)
+endif()
+
 add_library(ch)
 target_include_directories(ch PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 target_sources(ch
@@ -40,6 +44,8 @@ add_executable(thebotx_cxx src/main.cpp)
 target_link_libraries(thebotx_cxx PRIVATE ch Boost::Boost fmt::fmt spdlog::spdlog)
 target_compile_options(thebotx_cxx PRIVATE -fcoroutines)
 target_include_directories(thebotx_cxx PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+
+
 
 install(TARGETS thebotx_cxx ch
     ARCHIVE DESTINATION lib/static/
