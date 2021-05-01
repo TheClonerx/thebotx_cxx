@@ -35,7 +35,7 @@ jobs:
     - name: Build
       run: |
         build/activate.ps1
-        cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
+        cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }} --parallel
     
     - name: Install
       run: cmake --install ${{ github.workspace }}/build --config ${{ matrix.build_type }}
@@ -81,7 +81,7 @@ jobs:
     - name: Build
       run: |
         source build/activate.sh
-        cmake --build ${{ github.workspace }}/build
+        cmake --build ${{ github.workspace }}/build --parallel $(nproc)
     
     - name: Install
       run: cmake --install ${{ github.workspace }}/build
