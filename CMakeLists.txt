@@ -32,7 +32,7 @@ PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/RoomManager.cpp
 )
-target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::OpenSSL fmt::fmt spdlog::spdlog)
+target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::OpenSSL fmt::fmt spdlog::spdlog Boost::Boost)
 
 find_package(spdlog REQUIRED)
 
