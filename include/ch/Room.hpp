@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <queue>
-#include <span>
 
 namespace ch {
 class RoomManager;
