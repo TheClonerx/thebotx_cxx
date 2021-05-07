@@ -5,24 +5,41 @@
 
 using namespace std::literals;
 
+struct Login {
+    int id;
+    std::string user_name;
+    std::optional<std::string> password;
+};
+
 class TheBotx : public ch::RoomManager {
 public:
-    using ch::RoomManager::RoomManager;
+    TheBotx(boost::asio::io_context& io_context, boost::asio::ssl::context& ssl_context)
+        : ch::RoomManager(io_context, ssl_context)
+    {
+    }
 
-    void onInit() override
+    virtual ~TheBotx() = default;
+
+    boost::asio::awaitable<void> onInit() override
     {
         spdlog::info("Bot Inited"sv);
+        co_return;
     }
 
-    void onConnectFail(ch::Room& room, std::error_code ec) override
+    boost::asio::awaitable<void> onConnectFail(ch::Room& room, std::error_code ec) override
     {
         spdlog::error("Failed to connect to room {} ({}):\n\t{}: {}"sv, room.name(), room.server(), ec.category().name(), ec.message());
+        co_return;
     }
 
-    void onConnect(ch::Room& room) override
+    boost::asio::awaitable<void> onConnect(ch::Room& room) override
     {
         spdlog::info("Connected to room {} ({})"sv, room.name(), room.server());
+        co_return;
     }
+
+private:
+    std::vector<Login> m_logins;
 };
 
 int main()
@@ -31,8 +48,8 @@ int main()
     boost::asio::ssl::context ssl_context { boost::asio::ssl::context::method::sslv23 };
     ssl_context.set_default_verify_paths();
     auto thebotx = TheBotx(io_context, ssl_context);
-    thebotx.joinRoom("clonerx"sv);
-    thebotx.joinRoom("pythonrpg"sv);
+    thebotx.joinRoom("clonerx");
+    thebotx.joinRoom("pythonrpg");
     thebotx.exec();
     io_context.run();
 }

@@ -10,13 +10,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
+file(DOWNLOAD https://github.com/andreasbuhr/cppcoro/raw/master/cmake/FindCoroutines.cmake ${CMAKE_BINARY_DIR}/FindCoroutines.cmake)
+
+# list(APPEND CMAKE_MODULE_PATH "${googletest_SOURCE_DIR}/cmake")
+
 find_package(ctre REQUIRED)
 find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
 
 if (MSVC)
-    add_compile_options(/bigobj)
+    add_compile_options(/bigobj /W4)
+else()
+    add_compile_options(-Wall -Wextra --pedantic-errors)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-Weverything HAS_WEVERYTHING)
+    if(HAS_WEVERYTHING)
+        add_compile_options(-Weverything -Wno-c++98-compat)
+    endif()
 endif()
 
 add_library(ch)
@@ -34,17 +47,25 @@ PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/gen_uid.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/parse_font.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds/i.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds/pong.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds/ok.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds/v.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/io.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/connect.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/disconnect.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/RoomManager.cpp
 )
-target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::OpenSSL fmt::fmt spdlog::spdlog Boost::Boost)
+target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::OpenSSL spdlog::spdlog)
+target_link_libraries(ch PUBLIC std::coroutines Boost::Boost fmt::fmt)
 
-find_package(spdlog REQUIRED)
-
-add_executable(thebotx_cxx src/main.cpp)
-target_link_libraries(thebotx_cxx PRIVATE ch Boost::Boost fmt::fmt spdlog::spdlog)
+add_executable(thebotx_cxx)
+target_sources(thebotx_cxx PRIVATE
+${CMAKE_CURRENT_LIST_DIR}/src/thebotx/main.cpp
+)
+target_link_libraries(thebotx_cxx PRIVATE ch spdlog::spdlog)
 target_include_directories(thebotx_cxx PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-
-
 
 install(TARGETS thebotx_cxx ch
     ARCHIVE DESTINATION lib/static/
