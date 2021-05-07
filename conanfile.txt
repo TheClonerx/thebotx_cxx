@@ -1,7 +1,7 @@
 [requires]
 # libch
 boost/1.75.0
-openssl/1.1.1j
+# openssl/1.1.1j
 ctre/3.3.4
 
 # thebotx
