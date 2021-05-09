@@ -19,7 +19,7 @@ find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
+
 
 if (MSVC)
     add_compile_options(/bigobj /W4)
@@ -31,6 +31,12 @@ else()
         add_compile_options(-Weverything -Wno-c++98-compat)
     endif()
 endif()
+
+if (CMAKE_CXX_COMPILE_ID STREQUAL "Clang")
+    add_compile_options(-stdlib=libc++)
+endif()
+
+find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
 
 add_library(ch)
 target_include_directories(ch PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
