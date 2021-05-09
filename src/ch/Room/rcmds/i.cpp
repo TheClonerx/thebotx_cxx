@@ -1,5 +1,6 @@
 #include <ch/HistoryMessage.hpp>
 #include <ch/Room.hpp>
+#include <ch/get_anon_id.hpp>
 #include <ch/parse_name_color.hpp>
 
 #include <ctre.hpp>
@@ -24,23 +25,6 @@ static auto parse_n(std::string_view s)
     return sn;
     // std::uint32_t n = (sn[0] - '0') * 1000 + (sn[1] - '0') * 100 + (sn[2] - '0') * 10 + (sn[3] - '0');
     // return n;
-}
-
-static std::string get_anon_id(std::string_view n, std::string_view ssid)
-{
-    std::string result;
-    if (n.empty())
-        n = "5504"sv;
-
-    ssid.remove_prefix(std::min<std::size_t>(4, ssid.size()));
-    for (std::size_t i = 0; i < std::min(n.size(), ssid.size()); ++i) {
-        int sum = (n[i] - '0') + (ssid[i] - '0');
-        int last_digit = sum % 10;
-        result += last_digit + '0';
-    }
-    if (result.empty())
-        result += "NNNN"sv;
-    return result;
 }
 
 void ch::Room::rcmd_i(std::u8string cmd_args)
@@ -78,7 +62,11 @@ void ch::Room::rcmd_i(std::u8string cmd_args)
         ilog.user_name += tcx::no_utf8(argv[2]);
     } else {
         ilog.user_name += "!anon";
-        ilog.user_name += get_anon_id(parse_n(tcx::no_utf8(argv[9])), tcx::no_utf8(argv[3]));
+        auto anon_id = get_anon_id(parse_n(tcx::no_utf8(argv[9])), tcx::no_utf8(argv[3]));
+        if (anon_id)
+            ilog.user_name += *anon_id;
+        else
+            ilog.user_name = "NNNN"sv;
     }
     ilog.puid = *tcx::parse_int<std::uint64_t>(tcx::no_utf8(argv[3]));
     ilog.ip = argv[6].empty() ? boost::asio::ip::address {} : boost::asio::ip::make_address(tcx::no_utf8(argv[6]));
