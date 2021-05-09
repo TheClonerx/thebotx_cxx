@@ -52,6 +52,7 @@ PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/get_server.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/gen_uid.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/parse_font.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/ch/parse_name_color.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/rcmds/i.cpp

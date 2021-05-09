@@ -1,5 +1,6 @@
 #include <ch/HistoryMessage.hpp>
 #include <ch/Room.hpp>
+#include <ch/parse_name_color.hpp>
 
 #include <ctre.hpp>
 #include <spdlog/spdlog.h>
@@ -13,7 +14,6 @@
 using namespace std::literals;
 
 static constexpr ctll::fixed_string anon_number_pattern = "^<n([0-9]{4})/>.*";
-static constexpr ctll::fixed_string name_color_pattern = "^<n([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/>.*";
 
 static auto parse_n(std::string_view s)
 {
@@ -24,82 +24,6 @@ static auto parse_n(std::string_view s)
     return sn;
     // std::uint32_t n = (sn[0] - '0') * 1000 + (sn[1] - '0') * 100 + (sn[2] - '0') * 10 + (sn[3] - '0');
     // return n;
-}
-
-static ch::Color parse_name_color(std::string_view s)
-{
-    auto match = ctre::match<name_color_pattern>(s);
-    std::string_view sc = match.get<1>().to_view();
-    ch::Color result {};
-    if (sc.size() == 3) {
-        if ('0' <= sc[0] && sc[0] <= '9')
-            result.r = sc[0] - '0';
-        else if ('a' <= sc[0] && sc[0] <= 'f')
-            result.r = sc[0] - '0' + 10;
-        else if ('A' <= sc[0] && sc[0] <= 'A')
-            result.r = sc[0] - '0' + 10;
-
-        if ('0' <= sc[1] && sc[1] <= '9')
-            result.g = sc[1] - '0';
-        else if ('a' <= sc[1] && sc[1] <= 'f')
-            result.g = sc[1] - '0' + 10;
-        else if ('A' <= sc[1] && sc[1] <= 'A')
-            result.g = sc[1] - '0' + 10;
-
-        if ('0' <= sc[2] && sc[2] <= '9')
-            result.b = sc[2] - '0';
-        else if ('a' <= sc[2] && sc[2] <= 'f')
-            result.b = sc[2] - '0' + 10;
-        else if ('A' <= sc[2] && sc[2] <= 'A')
-            result.b = sc[2] - '0' + 10;
-
-        result.r = result.r << 4 | result.r;
-        result.g = result.g << 4 | result.g;
-        result.b = result.b << 4 | result.b;
-    } else {
-        if ('0' <= sc[0] && sc[0] <= '9')
-            result.r = (sc[0] - '0') << 4;
-        else if ('a' <= sc[0] && sc[0] <= 'f')
-            result.r = (sc[0] - '0' + 10) << 4;
-        else if ('A' <= sc[0] && sc[0] <= 'A')
-            result.r = (sc[0] - '0' + 10) << 4;
-
-        if ('0' <= sc[1] && sc[1] <= '9')
-            result.r |= sc[1] - '0';
-        else if ('a' <= sc[1] && sc[1] <= 'f')
-            result.r |= sc[1] - '0' + 10;
-        else if ('A' <= sc[1] && sc[1] <= 'A')
-            result.r |= sc[1] - '0' + 10;
-
-        if ('0' <= sc[2] && sc[2] <= '9')
-            result.g = (sc[2] - '0') << 4;
-        else if ('a' <= sc[2] && sc[2] <= 'f')
-            result.g = (sc[2] - '0' + 10) << 4;
-        else if ('A' <= sc[2] && sc[2] <= 'A')
-            result.g = (sc[2] - '0' + 10) << 4;
-
-        if ('0' <= sc[3] && sc[3] <= '9')
-            result.g = sc[3] - '0';
-        else if ('a' <= sc[3] && sc[3] <= 'f')
-            result.g = sc[3] - '0' + 10;
-        else if ('A' <= sc[3] && sc[3] <= 'A')
-            result.g = sc[3] - '0' + 10;
-
-        if ('0' <= sc[4] && sc[4] <= '9')
-            result.b = (sc[4] - '0') << 4;
-        else if ('a' <= sc[4] && sc[4] <= 'f')
-            result.b = (sc[4] - '0' + 10) << 4;
-        else if ('A' <= sc[4] && sc[4] <= 'A')
-            result.b = (sc[4] - '0' + 10) << 4;
-
-        if ('0' <= sc[5] && sc[5] <= '9')
-            result.b |= sc[5] - '0';
-        else if ('a' <= sc[5] && sc[5] <= 'f')
-            result.b |= sc[5] - '0' + 10;
-        else if ('A' <= sc[5] && sc[5] <= 'A')
-            result.b |= sc[5] - '0' + 10;
-    }
-    return result;
 }
 
 static std::string get_anon_id(std::string_view n, std::string_view ssid)
@@ -144,6 +68,9 @@ void ch::Room::rcmd_i(std::u8string cmd_args)
 
     if (!argv[1].empty()) {
         // log in name
+        auto name_color = parse_name_color(tcx::no_utf8(argv[9]));
+        if (name_color)
+            ilog.name_color = *name_color;
         ilog.user_name += tcx::no_utf8(argv[1]);
     } else if (!argv[2].empty()) {
         // temporary name
@@ -156,7 +83,6 @@ void ch::Room::rcmd_i(std::u8string cmd_args)
     ilog.puid = *tcx::parse_int<std::uint64_t>(tcx::no_utf8(argv[3]));
     ilog.ip = argv[6].empty() ? boost::asio::ip::address {} : boost::asio::ip::make_address(tcx::no_utf8(argv[6]));
     ilog.raw_body = std::u8string { argv[9] };
-    ilog.name_color = parse_name_color(tcx::no_utf8(argv[9]));
 
     m_ilogs.emplace_back(std::move(ilog));
 }
