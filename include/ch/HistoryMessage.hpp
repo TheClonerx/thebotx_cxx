@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ch/Color.hpp>
+
 #include <boost/asio/ip/address.hpp>
 
 #include <chrono>
@@ -19,5 +21,6 @@ struct HistoryMessage {
     std::uint64_t puid;
     boost::asio::ip::address ip;
     std::u8string raw_body;
+    ch::Color name_color;
 };
 } // namespace ch
