@@ -34,8 +34,8 @@ boost::asio::awaitable<void> ch::Room::connect()
         co_return;
     boost::asio::co_spawn(m_mgr->io_context(), do_read(), boost::asio::detached);
     boost::asio::co_spawn(m_mgr->io_context(), do_ping(), boost::asio::detached);
-    enqueue_command("v"sv);
-    enqueue_command("bauth"sv, this->m_name, ""sv, ""sv, ""sv);
+    co_await send_command("v"sv);
+    co_await send_command("bauth"sv, this->m_name, ""sv, ""sv, ""sv);
 }
 
 boost::asio::awaitable<void> ch::Room::connect(std::string_view user, std::string_view password)
@@ -47,8 +47,8 @@ boost::asio::awaitable<void> ch::Room::connect(std::string_view user, std::strin
         co_return;
     boost::asio::co_spawn(m_mgr->io_context(), do_read(), boost::asio::detached);
     boost::asio::co_spawn(m_mgr->io_context(), do_ping(), boost::asio::detached);
-    enqueue_command("v"sv);
-    enqueue_command("bauth"sv, this->m_name, this->m_uid, user, password);
+    co_await send_command("v"sv);
+    co_await send_command("bauth"sv, this->m_name, this->m_uid, user, password);
 }
 
 boost::asio::awaitable<std::error_code> ch::Room::do_connect()
@@ -60,7 +60,7 @@ boost::asio::awaitable<std::error_code> ch::Room::do_connect()
     try {
         {
             auto results = co_await m_mgr->resolver().async_resolve(m_host, WSS_PORT, boost::asio::use_awaitable);
-            auto endpoint = co_await boost::beast::get_lowest_layer(m_socket).async_connect(results, boost::asio::use_awaitable);
+            co_await boost::beast::get_lowest_layer(m_socket).async_connect(results, boost::asio::use_awaitable);
         }
 
         boost::beast::get_lowest_layer(m_socket).socket().set_option(boost::asio::ip::tcp::no_delay { false });

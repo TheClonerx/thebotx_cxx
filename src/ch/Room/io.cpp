@@ -1,6 +1,7 @@
 #include <ch/Room.hpp>
 #include <ch/RoomManager.hpp>
 
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <spdlog/spdlog.h>
@@ -10,6 +11,7 @@
 #include <tcx/unmangled_name.hpp>
 
 using namespace std::literals;
+using boost::asio::use_awaitable;
 
 boost::asio::awaitable<void> ch::Room::do_read()
 {
@@ -19,7 +21,7 @@ boost::asio::awaitable<void> ch::Room::do_read()
         read_vec.clear();
         try {
             auto buf = boost::asio::dynamic_buffer(read_vec);
-            co_await m_socket.async_read(buf, boost::asio::use_awaitable);
+            co_await m_socket.async_read(buf, use_awaitable);
         } catch (boost::system::system_error const& e) {
             ec = e.code();
         }
@@ -27,8 +29,8 @@ boost::asio::awaitable<void> ch::Room::do_read()
             spdlog::error("Error reading in room {}: [{}] {}", m_name, ec.category().name(), ec.message());
             m_status = Status::DISCONNECTING;
             try {
-                co_await m_socket.async_close(boost::beast::websocket::close_code::internal_error, boost::asio::use_awaitable);
-            } catch (boost::system::system_error const& e) {
+                co_await m_socket.async_close(boost::beast::websocket::close_code::internal_error, use_awaitable);
+            } catch (boost::system::system_error const&) {
                 // ignore
             }
             m_status = Status::DISCONNECTED;
@@ -37,7 +39,7 @@ boost::asio::awaitable<void> ch::Room::do_read()
         // sanity check, chatango only uses text messages
         if (!m_socket.got_text()) {
             spdlog::error("Received data isn't text!!");
-            co_await m_socket.async_close(boost::beast::websocket::close_code::unknown_data, boost::asio::use_awaitable);
+            co_await m_socket.async_close(boost::beast::websocket::close_code::unknown_data, use_awaitable);
             co_return;
         }
         // websocket standar ensures that this is utf8
@@ -61,25 +63,26 @@ boost::asio::awaitable<void> ch::Room::do_read()
             } catch (boost::system::system_error& e) {
                 spdlog::error("Error handling rcmd {} in room {}: [{}] {}", tcx::no_utf8(rcmd), m_name, e.code().category().name(), e.code().message());
             } catch (std::system_error& e) {
-                spdlog::error("Error handling rcmd {} in room {}: [{}] {}", tcx::no_utf8(rcmd), m_name,  e.code().category().name(), e.code().message());
+                spdlog::error("Error handling rcmd {} in room {}: [{}] {}", tcx::no_utf8(rcmd), m_name, e.code().category().name(), e.code().message());
             } catch (std::exception& e) {
                 spdlog::error("Error handling rcmd {} in room {}: [{}] {}", tcx::no_utf8(rcmd), m_name, tcx::unmangled_name(typeid(e)), e.what());
             }
         }
     }
-    co_await m_socket.async_close(boost::beast::websocket::close_code::normal, boost::asio::use_awaitable);
+    co_await m_socket.async_close(boost::beast::websocket::close_code::normal, use_awaitable);
     co_return;
 }
 
 boost::asio::awaitable<void> ch::Room::do_ping()
 {
+    boost::asio::steady_timer ping_timer { co_await boost::asio::this_coro::executor };
     while (m_status == Status::CONNECTED) {
-        m_ping_timer.expires_after(std::chrono::seconds(20));
+        ping_timer.expires_after(std::chrono::seconds(20));
         try {
-            co_await m_ping_timer.async_wait(boost::asio::use_awaitable);
+            co_await ping_timer.async_wait(use_awaitable);
             // sending an empty command is equivalent to ping
             // receiving an emtpy command is equivalent to pong
-            this->enqueue_command(""sv);
+            co_await send_command(""sv);
         } catch (boost::system::system_error& e) {
             if (e.code() != boost::asio::error::make_error_code(boost::asio::error::operation_aborted))
                 throw;
@@ -87,30 +90,4 @@ boost::asio::awaitable<void> ch::Room::do_ping()
         }
     }
     co_return;
-}
-
-void ch::Room::ensure_writing()
-{
-    if (!m_writing && m_sending.size()) {
-        auto const& buf = m_sending.front();
-        m_writing = true;
-        m_socket.async_write(boost::asio::const_buffer(buf.data(), buf.size()), boost::beast::bind_front_handler(&ch::Room::cb_on_write, this));
-    }
-}
-
-void ch::Room::cb_on_write(std::error_code ec, std::size_t)
-{
-    if (ec)
-        spdlog::error("write error: {} {}", ec.category().name(), ec.message());
-
-    spdlog::info("sent to {}: {}", m_name, tcx::repr(m_sending.front()));
-
-    m_sending.pop();
-    if (m_sending.empty()) {
-        m_writing = false;
-        return;
-    } else {
-        auto const& buf = m_sending.front();
-        m_socket.async_write(boost::asio::const_buffer(buf.data(), buf.size()), boost::beast::bind_front_handler(&ch::Room::cb_on_write, this));
-    }
 }

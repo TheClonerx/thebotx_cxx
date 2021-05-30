@@ -2,6 +2,8 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/websocket.hpp>
@@ -65,7 +67,7 @@ public:
 
 private:
     template <typename... Args>
-    void enqueue_command(std::string_view cmd, Args&&... args)
+    std::string make_command(std::string_view cmd, Args&&... args)
     {
         std::array<char, (sizeof...(Args) + 1) * 3 + 4> braces {};
         constexpr char const c[4] = "{}:";
@@ -82,8 +84,18 @@ private:
             braces[i++] = '\0';
         }
         auto command = FMT::format(std::string_view { braces.data(), i }, cmd, std::forward<Args>(args)...);
-        m_sending.emplace(std::move(command));
-        ensure_writing();
+        return command;
+    }
+
+    template <typename... Args>
+    boost::asio::awaitable<void> send_command(std::string_view cmd, Args&&... args)
+    {
+        using boost::asio::use_awaitable;
+        auto executor = co_await boost::asio::this_coro::executor;
+        auto command = make_command(cmd, std::forward<Args>(args)...);
+        co_await boost::asio::post(m_strand, use_awaitable); // start executing in an strand
+        co_await m_socket.async_write(boost::asio::buffer(command), use_awaitable);
+        co_await boost::asio::post(executor, use_awaitable); // go back to the original executor
     }
 
 private:
@@ -104,11 +116,9 @@ private:
     boost::asio::awaitable<void> do_read();
     boost::asio::awaitable<void> do_ping();
 
-    void cb_on_write(std::error_code ec, std::size_t bytes_transferred); // called by ensure_writing
     void cb_on_read(std::error_code ec, std::size_t bytes_read);
 
     void reset();
-    void ensure_writing();
 
 private:
     static boost::container::flat_map<std::u8string_view, decltype(&ch::Room::rcmd_pong)> const cmd_to_func;
@@ -116,16 +126,14 @@ private:
     RoomManager* m_mgr;
 
     boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> m_socket; //{ io_context, ssl_context };
+    boost::asio::strand<boost::asio::any_io_executor> m_strand;
+
     std::string m_name;
     std::string m_host;
     std::uint64_t m_uid;
 
     Status m_status = Status::DISCONNECTED;
     bool m_first_command = true;
-    bool m_writing = false;
-
-    std::queue<std::string> m_sending;
-    boost::asio::steady_timer m_ping_timer;
 
     std::vector<HistoryMessage> m_ilogs;
 };
