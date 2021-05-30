@@ -1,7 +1,12 @@
 #include <ch/Room.hpp>
 #include <ch/RoomManager.hpp>
 
+#include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
+
+#include <thread>
+
+#include <tcx/unmangled_name.hpp>
 
 using namespace std::literals;
 
@@ -55,5 +60,23 @@ int main()
     thebotx.joinRoom("clonerx");
     thebotx.joinRoom("pythonrpg");
     thebotx.exec();
-    io_context.run();
+
+    auto work = [&]() {
+        spdlog::info("Spinning up thread {}", std::this_thread::get_id());
+        for (;;) {
+            try {
+                io_context.run();
+                break;
+            } catch (std::exception const& e) {
+                spdlog::error("{}: {}"sv, tcx::unmangled_name(typeid(e)), e.what());
+            }
+        }
+    };
+
+    std::vector<std::thread> work_threads;
+
+    for (std::size_t i = 0; i < std::thread::hardware_concurrency(); ++i)
+        work_threads.emplace_back() = std::thread(work);
+    for (auto& thread : work_threads)
+        thread.join();
 }
