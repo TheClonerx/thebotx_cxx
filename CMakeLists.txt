@@ -5,13 +5,14 @@ if (${CMAKE_CURRENT_LIST_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
+set(CONAN_CMAKE_SILENT_OUTPUT ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
 file(DOWNLOAD https://github.com/andreasbuhr/cppcoro/raw/master/cmake/FindCoroutines.cmake ${CMAKE_BINARY_DIR}/FindCoroutines.cmake)
-if (CMAKE_CXX_COMPILE_ID STREQUAL "Clang")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     # As of Clang 11.1.0 libc++ is still required to use C++20 coroutines
     message(STATUS "Clang detected, using libc++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
