@@ -6,7 +6,7 @@
 
 static constexpr ctll::fixed_string pattern = " x([0-9]{2})([a-fA-F0-9]{3}|[a-fA-F0-9]{6})=\"(.*)\"";
 
-ch::parse_font_result ch::parse_font(std::string_view f) noexcept
+std::optional<ch::parse_font_result> ch::parse_font(std::string_view f) noexcept
 {
     auto match = ctre::match<pattern>(f);
     if (match) {
@@ -16,7 +16,6 @@ ch::parse_font_result ch::parse_font(std::string_view f) noexcept
         result.color = match.get<2>().to_view();
         result.font = match.get<3>().to_view();
         return result;
-    } else {
-        return { -1, {}, {} };
     }
+    return std::nullopt;
 }
