@@ -13,7 +13,7 @@ include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
 file(DOWNLOAD https://github.com/andreasbuhr/cppcoro/raw/master/cmake/FindCoroutines.cmake ${CMAKE_BINARY_DIR}/FindCoroutines.cmake)
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    # As of Clang 11.1.0 libc++ is still required to use C++20 coroutines
+    # As of Clang 11.1.0, libc++ is still required to use C++20 coroutines
     message(STATUS "Clang detected, using libc++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
@@ -23,7 +23,7 @@ find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
+find_package(Coroutines REQUIRED COMPONENTS Experimental Final)
 
 if (MSVC)
     add_compile_options(/bigobj /W4)
@@ -64,8 +64,8 @@ PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/disconnect.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/RoomManager.cpp
 )
-target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::SSL spdlog::spdlog)
-target_link_libraries(ch PUBLIC std::coroutines Boost::Boost fmt::fmt)
+target_link_libraries(ch PRIVATE ctre::ctre spdlog::spdlog)
+target_link_libraries(ch PUBLIC std::coroutines Boost::Boost fmt::fmt OpenSSL::SSL OpenSSL::Crypto)
 
 add_executable(thebotx_cxx)
 target_sources(thebotx_cxx PRIVATE
