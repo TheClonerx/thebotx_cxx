@@ -11,32 +11,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
 file(DOWNLOAD https://github.com/andreasbuhr/cppcoro/raw/master/cmake/FindCoroutines.cmake ${CMAKE_BINARY_DIR}/FindCoroutines.cmake)
-
-# list(APPEND CMAKE_MODULE_PATH "${googletest_SOURCE_DIR}/cmake")
+if (CMAKE_CXX_COMPILE_ID STREQUAL "Clang")
+    # As of Clang 11.1.0 libc++ is still required to use C++20 coroutines
+    message(STATUS "Clang detected, using libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
 
 find_package(ctre REQUIRED)
 find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
-
+find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
 
 if (MSVC)
     add_compile_options(/bigobj /W4)
 else()
-    add_compile_options(-Wall -Wextra --pedantic-errors)
     include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag(-Weverything HAS_WEVERYTHING)
-    if(HAS_WEVERYTHING)
-        add_compile_options(-Weverything -Wno-c++98-compat -Wno-padded -Wno-exit-time-destructors -Wno-global-constructors)
+    check_cxx_compiler_flag(-Weverything HAS_WEVERYTHING_FLAG)
+    if(HAS_WEVERYTHING_FLAG)
+        add_compile_options(-Weverything -Wno-c++98-compat -Wno-padded -Wno-exit-time-destructors -Wno-global-constructors --pedantic-errors)
+    else()
+        add_compile_options(-Wall -Wextra --pedantic-errors)
     endif()
 endif()
-
-if (CMAKE_CXX_COMPILE_ID STREQUAL "Clang")
-    add_compile_options(-stdlib=libc++)
-endif()
-
-find_package(Coroutines COMPONENTS Experimental Final REQUIRED)
 
 add_library(ch)
 target_include_directories(ch PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
@@ -65,7 +63,7 @@ PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/Room/disconnect.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/ch/RoomManager.cpp
 )
-target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::OpenSSL spdlog::spdlog)
+target_link_libraries(ch PRIVATE ctre::ctre OpenSSL::SSL spdlog::spdlog)
 target_link_libraries(ch PUBLIC std::coroutines Boost::Boost fmt::fmt)
 
 add_executable(thebotx_cxx)
