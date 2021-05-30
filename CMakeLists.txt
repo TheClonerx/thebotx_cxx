@@ -28,7 +28,7 @@ else()
     include(CheckCXXCompilerFlag)
     check_cxx_compiler_flag(-Weverything HAS_WEVERYTHING)
     if(HAS_WEVERYTHING)
-        add_compile_options(-Weverything -Wno-c++98-compat)
+        add_compile_options(-Weverything -Wno-c++98-compat -Wno-padded -Wno-exit-time-destructors -Wno-global-constructors)
     endif()
 endif()
 
