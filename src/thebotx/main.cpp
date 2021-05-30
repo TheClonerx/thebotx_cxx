@@ -18,7 +18,7 @@ public:
     {
     }
 
-    virtual ~TheBotx() = default;
+    ~TheBotx() override;
 
     boost::asio::awaitable<void> onInit() override
     {
@@ -41,6 +41,10 @@ public:
 private:
     std::vector<Login> m_logins;
 };
+
+TheBotx::~TheBotx()
+{
+}
 
 int main()
 {

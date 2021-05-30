@@ -138,8 +138,8 @@ std::string ch::get_server(std::string group)
 #if defined(__cpp_lib_format)
     return std::format("s{}.chatango.com", sn);
 #else
-    int len = std::snprintf(nullptr, 0, "s%d.chatango.com", sn)+1;
-    group.resize(len);
+    int len = std::snprintf(nullptr, 0, "s%d.chatango.com", sn) + 1;
+    group.resize(static_cast<std::size_t>(len));
     std::snprintf(group.data(), group.size(), "s%d.chatango.com", sn);
     return group;
 #endif

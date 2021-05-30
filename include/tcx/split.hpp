@@ -25,19 +25,21 @@ constexpr It split_to(It it, std::basic_string_view<CharT, Traits> hay, std::bas
 
 namespace tcx {
 
-#define VECTOR_SPLIT(view_type)                                                                           \
-    std::vector<view_type> split(view_type hay, view_type needle, std::size_t max = SIZE_MAX)             \
-    {                                                                                                     \
-        std::vector<view_type> result;                                                                    \
-        tcx::impl::split_to(std::back_inserter(result), hay, needle, max);                                \
-        return result;                                                                                    \
-    }                                                                                                     \
-    std::vector<view_type> split(view_type hay, view_type::value_type needle, std::size_t max = SIZE_MAX) \
-    {                                                                                                     \
-        std::vector<view_type> result;                                                                    \
-        tcx::impl::split_to(std::back_inserter(result), hay, view_type { &needle, 1 }, max);              \
-        return result;                                                                                    \
+#define VECTOR_SPLIT(view_type)                                                                                     \
+    inline std::vector<view_type> split(view_type hay, view_type needle, std::size_t max = SIZE_MAX)             \
+    {                                                                                                               \
+        std::vector<view_type> result;                                                                              \
+        tcx::impl::split_to(std::back_inserter(result), hay, needle, max);                                          \
+        return result;                                                                                              \
+    }                                                                                                               \
+                                                                                                                    \
+    inline std::vector<view_type> split(view_type hay, view_type::value_type needle, std::size_t max = SIZE_MAX) \
+    {                                                                                                               \
+        std::vector<view_type> result;                                                                              \
+        tcx::impl::split_to(std::back_inserter(result), hay, view_type { &needle, 1 }, max);                        \
+        return result;                                                                                              \
     }
+
 VECTOR_SPLIT(std::string_view)
 VECTOR_SPLIT(std::wstring_view)
 VECTOR_SPLIT(std::u8string_view)

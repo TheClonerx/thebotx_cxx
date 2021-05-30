@@ -40,7 +40,7 @@ void ch::Room::rcmd_i(std::u8string cmd_args)
 
         char* str_end;
         double time = std::strtod(+buf, &str_end);
-        if (!time && !str_end)
+        if (time == 0.0 && !str_end)
             throw std::runtime_error("can't convert to double");
 
 #if defined(__cpp_lib_chrono) && __cpp_lib_chrono > 201907L

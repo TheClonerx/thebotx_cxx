@@ -3,8 +3,7 @@
 
 #include <string_view>
 
-namespace ch
-{
+namespace ch {
     
 struct parse_font_result {
     int size;
@@ -15,6 +14,5 @@ struct parse_font_result {
 parse_font_result parse_font(std::string_view f) noexcept;
 
 } // namespace ch
-
 
 #endif
